@@ -4,7 +4,6 @@ package gin
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -144,7 +143,17 @@ func paramChecker() gin.HandlerFunc {
 			}
 			if s != param.Value || strings.Contains(s, "?") || strings.Contains(s, "#") {
 				c.Status(http.StatusBadRequest)
-				ErrorResponseWriter(c, errors.New("error: encoded url params"))
+				var reason string
+				if s != param.Value {
+					reason = "unescaped param not equal to escaped param"
+				}
+				if strings.Contains(s, "?") {
+					reason = "contains encoded '?'"
+				}
+				if strings.Contains(s, "#") {
+					reason = "contains encoded '#'"
+				}
+				ErrorResponseWriter(c, fmt.Errorf("error: encoded url params (s: '%s', v: '%s'): %s", s, param.Value, reason))
 				c.Abort()
 				return
 			}
